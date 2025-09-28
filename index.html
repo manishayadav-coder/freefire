@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tic Tac Toe - Neon (Particles)</title>
+<style>
+  :root{
+    --bg:#0f0b1a;
+    --panel:#1a1330;
+    --accent:#3ee7ff;
+    --accent2:#ff6bd6;
+    --glow: 0 0 18px rgba(62,231,255,.18), 0 0 40px rgba(255,107,214,.06);
+  }
+  html,body{height:100%;margin:0;font-family: Inter, system-ui, Arial; background: linear-gradient(180deg,#070416 0%, #0b0720 60%); color:#eaf7ff;}
+  .app{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;}
+  .card{width:100%;max-width:900px;background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:18px;padding:20px;box-shadow: 0 8px 30px rgba(0,0,0,0.6);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.03);}
+  .header{display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;}
+  .title{display:flex;align-items:center;gap:12px;flex:1;}
+  .logo-square{width:68px;height:68px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;box-shadow: 0 6px 26px rgba(0,0,0,0.5), var(--glow);font-weight:800;font-size:22px;color:#031019;}
+  .title h1{font-size:20px;margin:0;}
+  .subtitle{font-size:13px;color:rgba(234,247,255,0.6);}
+  .controls{display:flex;gap:10px;align-items:center;}
+  .btn{padding:10px 14px;border-radius:12px;border:0;cursor:pointer;font-weight:600;background:transparent;color:var(--accent);outline:none;box-shadow: var(--glow);backdrop-filter: blur(6px);border:1px solid rgba(62,231,255,0.12);}
+  .btn.primary{background: linear-gradient(90deg, rgba(62,231,255,0.08), rgba(255,107,214,0.06)); color:#eaffff;}
+  .board-wrap{display:flex;gap:20px;align-items:center;justify-content:center;flex-direction:row;}
+  @media(max-width:640px){ .board-wrap{flex-direction:column; gap:12px;} .logo-square{width:54px;height:54px;font-size:18px;} }
+  .board{width:340px;height:340px;max-width:85vw;max-height:85vw;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:10px;padding:12px;background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));border-radius:16px;border:1px solid rgba(255,255,255,0.03);box-shadow: 0 8px 40px rgba(8,6,20,0.6);position:relative;}
+  .cell{background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:800;color:#bfeeff;user-select:none;cursor:pointer;transition:transform .08s ease, box-shadow .08s;box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);}
+  .cell:active{transform:scale(0.98)}
+  .cell.empty:hover{box-shadow: 0 6px 20px rgba(0,0,0,0.5), 0 0 30px rgba(62,231,255,0.04);}
+  .x{color:var(--accent); text-shadow: 0 0 8px rgba(62,231,255,0.18);}
+  .o{color:var(--accent2); text-shadow: 0 0 8px rgba(255,107,214,0.18);}
+  .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background: linear-gradient(180deg, rgba(3,1,8,0.6), rgba(3,1,8,0.65));z-index:6;padding:18px;backdrop-filter: blur(6px);transition:opacity .25s ease, transform .25s ease;}
+  .overlay.hidden{opacity:0;pointer-events:none;transform:scale(.995)}
+  .start-card{text-align:center;color:#eaffff;}
+  .start-card h2{margin:0;font-size:26px;letter-spacing:1px;}
+  .start-card p{margin:8px 0 16px;color:rgba(234,247,255,0.7)}
+  .big-start{font-size:20px;padding:12px 18px;border-radius:12px;border:0;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--accent2)); color:#031019;font-weight:800;box-shadow: 0 12px 30px rgba(0,0,0,0.5), var(--glow);}
+  .status{font-size:16px;color:rgba(234,247,255,0.9);margin-top:10px;}
+  .small{font-size:13px;color:rgba(234,247,255,0.6);}
+  .win-line{position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:5;}
+  .line{position:absolute;height:6px;background:linear-gradient(90deg,var(--accent),var(--accent2));left:0;top:0;transform-origin:center;opacity:0;filter:drop-shadow(0 6px 26px rgba(0,0,0,0.7));transition:opacity .18s ease, transform .25s ease;border-radius:6px;}
+  .line.show{opacity:1}
+  .footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .score{font-weight:700;color:rgba(234,247,255,0.9)}
+  .tiny{font-size:12px;color:rgba(234,247,255,0.45)}
+  /* particles canvas */
+  #particleCanvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:8;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card" role="application" aria-label="Tic Tac Toe game card">
+    <canvas id="particleCanvas"></canvas>
+
+    <div class="header">
+      <div class="title">
+        <div class="logo-square">T³</div>
+        <div>
+          <h1>Tic Tac Toe</h1>
+          <div class="subtitle small">Neon style mobile friendly game</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn" class="btn primary">Start Game</button>
+        <button id="resetBtn" class="btn">Reset</button>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board" aria-label="tic tac toe board">
+        <div class="cell empty" data-index="0" role="button" aria-label="cell 1"></div>
+        <div class="cell empty" data-index="1" role="button" aria-label="cell 2"></div>
+        <div class="cell empty" data-index="2" role="button" aria-label="cell 3"></div>
+        <div class="cell empty" data-index="3" role="button" aria-label="cell 4"></div>
+        <div class="cell empty" data-index="4" role="button" aria-label="cell 5"></div>
+        <div class="cell empty" data-index="5" role="button" aria-label="cell 6"></div>
+        <div class="cell empty" data-index="6" role="button" aria-label="cell 7"></div>
+        <div class="cell empty" data-index="7" role="button" aria-label="cell 8"></div>
+        <div class="cell empty" data-index="8" role="button" aria-label="cell 9"></div>
+
+        <div class="win-line" id="winLine" aria-hidden="true">
+          <div id="line" class="line"></div>
+        </div>
+      </div>
+
+      <div style="width:220px;max-width:40vw">
+        <div style="padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.02)">
+          <div class="status" id="status">Click <strong>Start Game</strong> to begin</div>
+          <div class="small" style="margin-top:10px">Current: <span id="current">-</span></div>
+
+          <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+            <button id="aiToggle" class="btn">Play vs AI: <span id="aiLabel">Off</span></button>
+            <button id="chooseX" class="btn">You: X</button>
+            <button id="chooseO" class="btn">You: O</button>
+          </div>
+
+        </div>
+
+        <div style="margin-top:12px;padding:10px;border-radius:10px" class="tiny">
+          <div class="score">Score</div>
+          <div style="display:flex;gap:12px;margin-top:8px">
+            <div>Player: <strong id="scoreP">0</strong></div>
+            <div>AI/CPU: <strong id="scoreC">0</strong></div>
+            <div>Ties: <strong id="scoreT">0</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="tiny">Tap / click on cells. Mobile friendly.</div>
+      <div class="tiny">Made for you — start & enjoy!</div>
+    </div>
+
+    <div id="overlay" class="overlay">
+      <div class="start-card">
+        <h2>Start Game</h2>
+        <p>Tap "Start Game" or this card to begin</p>
+        <button id="overlayStart" class="big-start">Start Game</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // DOM elements
+  const startBtn = document.getElementById('startBtn');
+  const overlay = document.getElementById('overlay');
+  const overlayStart = document.getElementById('overlayStart');
+  const resetBtn = document.getElementById('resetBtn');
+  const boardEl = document.getElementById('board');
+  const cells = Array.from(document.querySelectorAll('.cell'));
+  const statusEl = document.getElementById('status');
+  const currentEl = document.getElementById('current');
+  const winLine = document.getElementById('winLine');
+  const lineEl = document.getElementById('line');
+  const aiToggle = document.getElementById('aiToggle');
+  const aiLabel = document.getElementById('aiLabel');
+  const chooseX = document.getElementById('chooseX');
+  const chooseO = document.getElementById('chooseO');
+  const scoreP = document.getElementById('scoreP');
+  const scoreC = document.getElementById('scoreC');
+  const scoreT = document.getElementById('scoreT');
+
+  // particles canvas
+  const pCanvas = document.getElementById('particleCanvas');
+  const pCtx = pCanvas.getContext('2d');
+
+  // sizing canvas to card
+  function resizeCanvas(){
+    const card = document.querySelector('.card').getBoundingClientRect();
+    pCanvas.width = Math.max(1, Math.floor(card.width * devicePixelRatio));
+    pCanvas.height = Math.max(1, Math.floor(card.height * devicePixelRatio));
+    pCanvas.style.width = card.width + 'px';
+    pCanvas.style.height = card.height + 'px';
+    pCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  }
+  window.addEventListener('resize', resizeCanvas);
+  setTimeout(resizeCanvas,50);
+
+  // particles system
+  let particles = [];
+  let animId = null;
+
+  function createParticles(x, y, color){
+    const count = 28;
+    for(let i=0;i<count;i++){
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 4 + 1.5;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - (Math.random()*1.2),
+        life: Math.random() * 60 + 40,
+        ttl: 0,
+        size: Math.random()*3 + 2,
+        color: color,
+        gravity: 0.12 + Math.random()*0.06,
+        wobble: Math.random()*0.06
+      });
+    }
+    if(!animId) runParticles();
+  }
+
+  function runParticles(){
+    const step = () => {
+      pCtx.clearRect(0,0,pCanvas.width, pCanvas.height);
+      // draw each particle
+      for(let i=particles.length-1;i>=0;i--){
+        const p = particles[i];
+        p.ttl++;
+        if(p.ttl > p.life){
+          particles.splice(i,1);
+          continue;
+        }
+        // physics
+        p.vy += p.gravity;
+        p.x += p.vx;
+        p.y += p.vy;
+        // fade
+        const alpha = 1 - (p.ttl / p.life);
+        pCtx.save();
+        pCtx.globalAlpha = alpha;
+        pCtx.translate(p.x, p.y);
+        pCtx.rotate(p.ttl * p.wobble);
+        // draw rectangle-ish particle for neon confetti look
+        pCtx.fillStyle = p.color;
+        pCtx.fillRect(-p.size/2, -p.size/2, p.size, p.size*1.8);
+        pCtx.restore();
+      }
+      if(particles.length > 0){
+        animId = requestAnimationFrame(step);
+      } else {
+        cancelAnimationFrame(animId);
+        animId = null;
+        pCtx.clearRect(0,0,pCanvas.width, pCanvas.height);
+      }
+    };
+    animId = requestAnimationFrame(step);
+  }
+
+  // Game state
+  let board = Array(9).fill(null);
+  let turn = 'X';
+  let running = false;
+  let playVsAI = false;
+  let playerMark = 'X';
+  let cpuMark = 'O';
+  let scores = {player:0, cpu:0, tie:0};
+
+  const wins = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  function setStatus(text){ statusEl.innerHTML = text; }
+
+  function startGame(){
+    overlay.classList.add('hidden');
+    running = true;
+    board.fill(null);
+    cells.forEach(c => { c.classList.remove('x','o'); c.classList.add('empty'); c.textContent=''; });
+    hideLine();
+    turn = 'X';
+    updateCurrent();
+    setStatus('Game started — Play!');
+    startBtn.textContent = 'Restart';
+  }
+
+  function resetAll(){
+    scores = {player:0,cpu:0,tie:0};
+    scoreP.textContent = '0';
+    scoreC.textContent = '0';
+    scoreT.textContent = '0';
+    startGame();
+  }
+
+  function updateCurrent(){
+    currentEl.textContent = (turn === playerMark ? `You (${playerMark})` : (playVsAI ? `CPU (${cpuMark})` : `Player ${turn}`));
+  }
+
+  function cellClick(e){
+    if(!running) return;
+    const idx = Number(e.currentTarget.dataset.index);
+    if(board[idx]) return;
+    makeMove(idx, turn);
+    if(playVsAI && running && turn === cpuMark){
+      setTimeout(() => {
+        const aiIdx = computeAIMove();
+        if(aiIdx !== -1) makeMove(aiIdx, cpuMark);
+      }, 260);
+    }
+  }
+
+  function makeMove(idx, who){
+    if(board[idx] || !running) return;
+    board[idx] = who;
+    const el = cells[idx];
+    el.textContent = who;
+    el.classList.remove('empty');
+    el.classList.add(who === 'X' ? 'x' : 'o');
+
+    const winInfo = checkWin();
+    if(winInfo){
+      running = false;
+      showWin(winInfo);
+      if(playVsAI){
+        if(winInfo.winner === playerMark) { scores.player++; scoreP.textContent = scores.player; setStatus('You win!'); }
+        else { scores.cpu++; scoreC.textContent = scores.cpu; setStatus('CPU wins!'); }
+      } else {
+        setStatus(`Player ${winInfo.winner} wins!`);
+      }
+      return;
+    }
+    if(board.every(Boolean)){
+      running = false;
+      scores.tie++;
+      scoreT.textContent = scores.tie;
+      setStatus('Match tied!');
+      return;
+    }
+    turn = (who === 'X' ? 'O' : 'X');
+    updateCurrent();
+    setStatus(`Turn: ${turn}`);
+  }
+
+  function checkWin(){
+    for(const w of wins){
+      const [a,b,c] = w;
+      if(board[a] && board[a] === board[b] && board[a] === board[c]){
+        return {winner: board[a], combo: w};
+      }
+    }
+    return null;
+  }
+
+  function showWin({combo, winner}){
+    // compute line pos
+    const rect = boardEl.getBoundingClientRect();
+    const aEl = cells[combo[0]].getBoundingClientRect();
+    const cEl = cells[combo[2]].getBoundingClientRect();
+    const centerA = { x: aEl.left + aEl.width/2 - rect.left, y: aEl.top + aEl.height/2 - rect.top };
+    const centerC = { x: cEl.left + cEl.width/2 - rect.left, y: cEl.top + cEl.height/2 - rect.top };
+    const dx = centerC.x - centerA.x;
+    const dy = centerC.y - centerA.y;
+    const length = Math.sqrt(dx*dx + dy*dy) + 8;
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    const cx = (centerA.x + centerC.x)/2;
+    const cy = (centerA.y + centerC.y)/2;
+    // position line element
+    lineEl.style.width = length + 'px';
+    lineEl.style.left = (cx - length/2) + 'px';
+    lineEl.style.top = (cy - 3) + 'px';
+    lineEl.style.transform = 'rotate(' + angle + 'deg)';
+    lineEl.classList.add('show');
+
+    // trigger particles at center (scale for devicePixelRatio)
+    // ensure canvas resized
+    resizeCanvas();
+    const canvasOffset = document.querySelector('.card').getBoundingClientRect();
+    // particle x,y in canvas coordinates (not scaled by DPR because ctx transform used)
+    const partX = cx + (boardEl.getBoundingClientRect().left - canvasOffset.left);
+    const partY = cy + (boardEl.getBoundingClientRect().top - canvasOffset.top);
+
+    // choose color by winner
+    const color = (winner === 'X') ? 'rgba(62,231,255,0.98)' : 'rgba(255,107,214,0.98)';
+    createParticles(partX, partY, color);
+
+    // small glow pulse on winners cells
+    combo.forEach(i => {
+      const ce = cells[i];
+      ce.style.transition = 'box-shadow .35s ease, transform .25s';
+      ce.style.boxShadow = '0 6px 40px rgba(0,0,0,0.6), 0 0 30px ' + (winner === 'X' ? 'rgba(62,231,255,0.12)' : 'rgba(255,107,214,0.12)');
+      ce.style.transform = 'scale(1.04)';
+      setTimeout(()=>{ ce.style.transform='scale(1)'; ce.style.boxShadow=''; }, 700);
+    });
+  }
+
+  function hideLine(){ lineEl.classList.remove('show'); }
+
+  // AI (simple)
+  function computeAIMove(){
+    for(let i=0;i<9;i++){
+      if(!board[i]){
+        board[i] = cpuMark;
+        if(checkWin()){ board[i] = null; return i; }
+        board[i] = null;
+      }
+    }
+    for(let i=0;i<9;i++){
+      if(!board[i]){
+        board[i] = playerMark;
+        if(checkWin()){ board[i] = null; return i; }
+        board[i] = null;
+      }
+    }
+    if(!board[4]) return 4;
+    const corners = [0,2,6,8].filter(i=>!board[i]);
+    if(corners.length) return corners[Math.floor(Math.random()*corners.length)];
+    const sides = [1,3,5,7].filter(i=>!board[i]);
+    if(sides.length) return sides[Math.floor(Math.random()*sides.length)];
+    return -1;
+  }
+
+  // UI hookup
+  cells.forEach(c => c.addEventListener('click', cellClick, {passive:true}));
+  startBtn.addEventListener('click', ()=> { startGame(); });
+  overlayStart.addEventListener('click', ()=> { startGame(); });
+  overlay.addEventListener('click', (e)=> { if(e.target === overlay) startGame(); });
+
+  resetBtn.addEventListener('click', ()=> {
+    board.fill(null);
+    cells.forEach(c => { c.classList.remove('x','o'); c.classList.add('empty'); c.textContent=''; c.style.boxShadow=''; c.style.transform=''; });
+    hideLine();
+    running = false;
+    setStatus('Click Start Game to play again');
+    overlay.classList.remove('hidden');
+    startBtn.textContent = 'Start Game';
+  });
+
+  aiToggle.addEventListener('click', ()=> {
+    playVsAI = !playVsAI;
+    aiLabel.textContent = playVsAI ? 'On' : 'Off';
+    aiToggle.classList.toggle('primary', playVsAI);
+  });
+
+  chooseX.addEventListener('click', ()=> {
+    playerMark='X'; cpuMark='O';
+    chooseX.classList.add('primary');
+    chooseO.classList.remove('primary');
+    updateCurrent();
+  });
+  chooseO.addEventListener('click', ()=> {
+    playerMark='O'; cpuMark='X';
+    chooseO.classList.add('primary');
+    chooseX.classList.remove('primary');
+    updateCurrent();
+  });
+
+  chooseX.classList.add('primary');
+  aiLabel.textContent = 'Off';
+
+  cells.forEach(c => {
+    c.addEventListener('keydown', (ev) => {
+      if(ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); c.click(); }
+    });
+  });
+
+  setStatus('Ready. Click Start Game.');
+  currentEl.textContent = '-';
+
+  // Ensure canvas sizing when card opens (overlay hidden)
+  const obs = new ResizeObserver(()=> resizeCanvas());
+  obs.observe(document.querySelector('.card'));
+</script>
+
+<script async="async" data-cfasync="false" src="//pl27726958.revenuecpmgate.com/da31921e06c8fdeeaccbff35ff944b27/invoke.js"></script>
+<div id="container-da31921e06c8fdeeaccbff35ff944b27"></div>
+</body>
+</html>
